@@ -1,0 +1,92 @@
+services:
+  # Redis cache service
+  redis:
+    image: redis:7-alpine
+    container_name: hotel-aggregator-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - hotel-network
+
+  # Temporal dev server (with built-in UI on 8233)
+  temporal:
+    image: temporalio/admin-tools:latest
+    container_name: hotel-aggregator-temporal
+    entrypoint: ["temporal", "server", "start-dev", "--ip", "0.0.0.0", "--ui-ip", "0.0.0.0"]
+    ports:
+      - "7233:7233"
+      - "8233:8233"
+    restart: unless-stopped
+    networks:
+      - hotel-network
+
+  # Express Aggregator API and Mock Suppliers
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hotel-aggregator-api
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CACHE_TTL=60
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_NAMESPACE=default
+      - TEMPORAL_TASK_QUEUE=hotel-aggregation
+      - SUPPLIER_A_URL=http://api:3000/supplierA/hotels
+      - SUPPLIER_B_URL=http://api:3000/supplierB/hotels
+      - SUPPLIER_A_FAIL=false
+      - SUPPLIER_B_FAIL=false
+    depends_on:
+      redis:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - hotel-network
+
+  # Temporal Worker (orchestrates workflows and runs activities)
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hotel-aggregator-worker
+    command: ["node", "dist/temporal/worker.js"]
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CACHE_TTL=60
+      - TEMPORAL_ADDRESS=temporal:7233
+      - TEMPORAL_NAMESPACE=default
+      - TEMPORAL_TASK_QUEUE=hotel-aggregation
+      - SUPPLIER_A_URL=http://api:3000/supplierA/hotels
+      - SUPPLIER_B_URL=http://api:3000/supplierB/hotels
+      - SUPPLIER_A_FAIL=false
+      - SUPPLIER_B_FAIL=false
+    depends_on:
+      api:
+        condition: service_started
+      temporal:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - hotel-network
+
+networks:
+  hotel-network:
+    driver: bridge

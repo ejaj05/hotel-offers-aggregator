@@ -1,0 +1,200 @@
+{
+  "info": {
+    "_postman_id": "8c591a27-31ef-42f2-9ad9-f06b9978a632",
+    "name": "Hotel Offers Aggregator API",
+    "description": "Postman Collection for testing the Hotel Offers Aggregator API with Temporal, Redis, and Mock Suppliers",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        },
+        "description": "Returns health status of the application, Redis, Temporal, and Suppliers"
+      }
+    },
+    {
+      "name": "2. Get All Hotels (Deduplicated & Best Price)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/hotels",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "hotels"]
+        },
+        "description": "Aggregates from both suppliers, deduplicates by hotel name & city, picks lowest price"
+      }
+    },
+    {
+      "name": "3. Get Hotels Filtered by City (Kolkata)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/hotels?city=Kolkata",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "hotels"],
+          "query": [
+            {
+              "key": "city",
+              "value": "Kolkata"
+            }
+          ]
+        },
+        "description": "Filters aggregated hotels by city=Kolkata"
+      }
+    },
+    {
+      "name": "4. Get Hotels by City and minPrice (Kolkata, minPrice=1000)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/hotels?city=Kolkata&minPrice=1000",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "hotels"],
+          "query": [
+            {
+              "key": "city",
+              "value": "Kolkata"
+            },
+            {
+              "key": "minPrice",
+              "value": "1000"
+            }
+          ]
+        },
+        "description": "Filters hotels in Kolkata with price >= 1000"
+      }
+    },
+    {
+      "name": "5. Get Hotels with Price Range (Delhi, minPrice=2000, maxPrice=4000)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/hotels?city=Delhi&minPrice=2000&maxPrice=4000",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "hotels"],
+          "query": [
+            {
+              "key": "city",
+              "value": "Delhi"
+            },
+            {
+              "key": "minPrice",
+              "value": "2000"
+            },
+            {
+              "key": "maxPrice",
+              "value": "4000"
+            }
+          ]
+        },
+        "description": "Demonstrates price range filtering"
+      }
+    },
+    {
+      "name": "6. Mock Supplier A - Raw Hotels",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/supplierA/hotels",
+          "host": ["{{baseUrl}}"],
+          "path": ["supplierA", "hotels"]
+        },
+        "description": "Direct inspection of Supplier A mock data"
+      }
+    },
+    {
+      "name": "7. Mock Supplier B - Raw Hotels",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/supplierB/hotels",
+          "host": ["{{baseUrl}}"],
+          "path": ["supplierB", "hotels"]
+        },
+        "description": "Direct inspection of Supplier B mock data"
+      }
+    },
+    {
+      "name": "8. Supplier A Failure Simulation (Header x-fail)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-fail-supplier-a",
+            "value": "true"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/supplierA/hotels?fail=true",
+          "host": ["{{baseUrl}}"],
+          "path": ["supplierA", "hotels"],
+          "query": [
+            {
+              "key": "fail",
+              "value": "true"
+            }
+          ]
+        },
+        "description": "Tests supplier failure simulation directly"
+      }
+    },
+    {
+      "name": "9. Validation Error - Invalid minPrice (minPrice=abc)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/hotels?minPrice=abc",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "hotels"],
+          "query": [
+            {
+              "key": "minPrice",
+              "value": "abc"
+            }
+          ]
+        },
+        "description": "Verifies 400 Bad Request error response"
+      }
+    },
+    {
+      "name": "10. City with No Results",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/hotels?city=NonExistentCity",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "hotels"],
+          "query": [
+            {
+              "key": "city",
+              "value": "NonExistentCity"
+            }
+          ]
+        },
+        "description": "Verifies empty list response when no hotels match"
+      }
+    }
+  ]
+}
